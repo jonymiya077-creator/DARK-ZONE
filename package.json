@@ -1,0 +1,16 @@
+{
+  "name": "dark-zone-room-server",
+  "version": "1.2.0",
+  "private": true,
+  "description": "DARK-ZONE WebSocket room and player-presence backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
