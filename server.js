@@ -1,4 +1,6 @@
 const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
 const { WebSocketServer, WebSocket } = require("ws");
 
 const PORT = Number(process.env.PORT || 3000);
@@ -6,9 +8,18 @@ const MAX_PLAYERS_PER_ROOM = 32;
 const rooms = new Map();
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/health" || req.url === "/") {
+  if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ ok: true, service: "DARK-ZONE multiplayer", rooms: rooms.size }));
+  }
+  if (req.url === "/" || req.url === "/index.html") {
+    const gamePath = path.join(__dirname, "index.html");
+    if (!fs.existsSync(gamePath)) {
+      res.writeHead(503, { "content-type": "text/plain; charset=utf-8" });
+      return res.end("DARK-ZONE game file is missing. Add index.html to the repository.");
+    }
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
+    return res.end(fs.readFileSync(gamePath));
   }
   res.writeHead(404);
   res.end("Not found");
