@@ -45,10 +45,14 @@ function removePlayer(ws) {
   if (!roomId || !clientId) return;
   const room = rooms.get(roomId);
   if (room) {
-    room.delete(clientId);
-    broadcast(room, { type: "player_left", clientId });
-    if (room.size === 0) rooms.delete(roomId);
-    else broadcast(room, { type: "room_state", players: [...room.values()].map(({ ws: _ws, ...p }) => p) });
+    const existing = room.get(clientId);
+    // A stale socket must never remove a newer connection using the same player ID.
+    if (existing && existing.ws === ws) {
+      room.delete(clientId);
+      broadcast(room, { type: "player_left", clientId });
+      if (room.size === 0) rooms.delete(roomId);
+      else broadcast(room, { type: "room_state", players: [...room.values()].map(({ ws: _ws, ...p }) => p) });
+    }
   }
   ws.roomId = null;
   ws.clientId = null;
@@ -76,6 +80,13 @@ wss.on("connection", (ws) => {
       removePlayer(ws);
       let room = rooms.get(roomId);
       if (!room) { room = new Map(); rooms.set(roomId, room); }
+      if (room.has(clientId)) {
+        const previous = room.get(clientId);
+        previous.ws.roomId = null;
+        previous.ws.clientId = null;
+        try { previous.ws.close(1000, "Player reconnected"); } catch {}
+        room.delete(clientId);
+      }
       if (room.size >= MAX_PLAYERS_PER_ROOM) return send(ws, { type: "error", message: "Room is full." });
 
       const player = {
