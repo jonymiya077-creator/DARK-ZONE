@@ -8,11 +8,12 @@ const MAX_PLAYERS_PER_ROOM = 32;
 const rooms = new Map();
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/health") {
-    res.writeHead(200, { "content-type": "application/json" });
+  const pathname = new URL(req.url || "/", "http://localhost").pathname.replace(/\\/+$/, "") || "/";
+  if (pathname === "/health" || pathname === "/healthz") {
+    res.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-cache" });
     return res.end(JSON.stringify({ ok: true, service: "DARK-ZONE multiplayer", rooms: rooms.size }));
   }
-  if (req.url === "/" || req.url === "/index.html") {
+  if (pathname === "/" || pathname === "/index.html") {
     const gamePath = path.join(__dirname, "index.html");
     if (!fs.existsSync(gamePath)) {
       res.writeHead(503, { "content-type": "text/plain; charset=utf-8" });
@@ -21,7 +22,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
     return res.end(fs.readFileSync(gamePath));
   }
-  res.writeHead(404);
+  res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
   res.end("Not found");
 });
 
